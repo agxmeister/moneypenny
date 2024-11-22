@@ -1,5 +1,5 @@
 import getMagicBall from "@/MagicBall";
-
+import {statusHandler, actionHandler} from "@/MagicBall";
 
 export async function POST(request: Request) {
     const data = await request.json();
@@ -9,7 +9,12 @@ export async function POST(request: Request) {
     const thread = await magicBall.createThread();
     await magicBall.addUserMessage(thread.id, data.input);
     const assistant = await magicBall.createAssistant();
-    const output = await magicBall.runConversation(thread.id, assistant.id);
+    const output = await magicBall.runConversation(
+        thread.id,
+        assistant.id,
+        statusHandler,
+        actionHandler,
+    );
 
     return Response.json(output);
 }
