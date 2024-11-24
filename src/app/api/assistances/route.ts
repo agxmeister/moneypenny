@@ -8,9 +8,13 @@ export async function POST(request: Request) {
         apiKey: process.env.OPENAI_API_KEY
     }));
 
-    const thread = await magicBall.createThread();
-    await magicBall.addUserMessage(thread.id, data.input);
-    const assistant = await magicBall.createAssistant();
+    const thread = await magicBall.createThread([data.input]);
+    console.log(thread);
+
+    const assistant = await magicBall.createAssistant(
+        "You are a website's content manager. Answer in JSON in accordance with the schema.",
+    );
+
     const output = await magicBall.runConversation(thread.id, assistant.id);
 
     return Response.json(output);

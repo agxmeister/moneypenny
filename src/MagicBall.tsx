@@ -72,31 +72,35 @@ export default class MagicBall
         });
     }
 
-    async createThread(): Promise<Thread>
+    async createThread(userInputs: Array<string> = []): Promise<Thread>
     {
-        return this.client.beta.threads.create();
+        return this.client.beta.threads.create({
+            messages: userInputs.map((userInput) => ({
+                content: userInput,
+                role: "user",
+            })),
+        });
     }
 
     async addUserMessage(threadId: string, userInput: string): Promise<Message>
     {
         return this.client.beta.threads.messages.create(threadId, {
-            role: "user",
             content: userInput,
+            role: "user",
         });
     }
 
-    async createAssistant(): Promise<Assistant>
+    async createAssistant(instructions: string): Promise<Assistant>
     {
         return this.client.beta.assistants.create({
-            model: "gpt-4o",
-            instructions:
-                "You are assisting with changing the content on the user's website. Use the provided functions to help the user.",
+            model: "gpt-4o-mini",
+            instructions: instructions,
             tools: [
                 {
                     type: "function",
                     function: {
                         name: "publishWebsite",
-                        description: "Publish new version of website.",
+                        description: "Publish website.",
                         parameters: {},
                     },
                 },
