@@ -17,31 +17,33 @@ export default class MagicBall
         this.client = client;
     }
 
-    async statusHandler(client: OpenAI, run: Run, threadId: string): Promise<any>
+    async statusHandler(client: OpenAI, threadId: string, runId: string, runStatus: string, run: Run): Promise<void>
     {
-        console.log(run.status);
-        if (run.status === "completed") {
-            let messages = await client.beta.threads.messages.list(threadId);
-            console.log(messages.data);
-            return messages.data;
+        if (runStatus === "completed") {
+            console.error("Run completed:", runId, runStatus);
+            return;
         } else if (
-            run.status === "requires_action" &&
+            runStatus === "requires_action" &&
             run.required_action &&
             run.required_action.submit_tool_outputs &&
             run.required_action.submit_tool_outputs.tool_calls
         ) {
+            console.error("Run require actions:", runId, runStatus);
+            const newRun = await this.actionHandler(
+                client,
+                threadId,
+                runId,
+                run.required_action.submit_tool_outputs.tool_calls,
+            );
             return this.statusHandler(
                 client,
-                await this.actionHandler(
-                    client,
-                    threadId,
-                    run.id,
-                    run.required_action.submit_tool_outputs.tool_calls,
-                ),
                 threadId,
+                newRun.id,
+                newRun.status,
+                newRun,
             );
         } else {
-            console.error("Run did not complete:", run);
+            console.error("Run not completed", runId, runStatus);
         }
     }
 
@@ -90,7 +92,7 @@ export default class MagicBall
         });
     }
 
-    async createAssistant(instructions: string): Promise<Assistant>
+    async createAssistant(model: string, instructions: string): Promise<Assistant>
     {
         return this.client.beta.assistants.create({
             model: "gpt-4o-mini",
@@ -113,6 +115,12 @@ export default class MagicBall
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
             assistant_id: assistantId,
         });
-        return this.statusHandler(this.client, run, threadId);
+        await this.statusHandler(this.client, threadId, run.id, run.status, run);
+        return run;
+    }
+
+    async getMessages(threadId: string)
+    {
+        return this.client.beta.threads.messages.list(threadId);
     }
 }
