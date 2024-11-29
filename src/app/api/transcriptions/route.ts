@@ -12,7 +12,7 @@ export async function GET() {
     });
 
     return Response.json({
-        message: transcription,
+        message: transcription.text,
         date: Date.now(),
     });
 }
