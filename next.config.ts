@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
                 source: "/api/test",
                 headers: [
                     { key: "Access-Control-Allow-Origin", value: "*" },
-                    { key: "Access-Control-Allow-Methods", value: "GET" },
+                    { key: "Access-Control-Allow-Methods", value: "*" },
+                    { key: "Access-Control-Allow-Headers", value: "*" },
                 ]
             }
         ]
