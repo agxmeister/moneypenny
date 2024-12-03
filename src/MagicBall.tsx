@@ -201,6 +201,7 @@ export default class MagicBall
         return this.client.audio.transcriptions.create({
             file: file,
             model: "whisper-1",
+            language: "en",
         });
     }
 }
