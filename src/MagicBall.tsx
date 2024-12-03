@@ -1,12 +1,15 @@
 import OpenAI from "openai";
-import {Thread} from "openai/resources/beta/threads/threads";
+import {Thread, ThreadDeleted} from "openai/resources/beta/threads/threads";
 import {
     Run,
     RequiredActionFunctionToolCall,
     RunSubmitToolOutputsAndPollParams
 } from "openai/resources/beta/threads/runs/runs";
 import {Message} from "openai/resources/beta/threads/messages";
-import {Assistant} from "openai/resources/beta/assistants";
+import {Assistant, AssistantDeleted} from "openai/resources/beta/assistants";
+import {FileLike} from "openai/uploads";
+import EmulatedTranscription from "@/emulated/EmulatedTranscription";
+import EmulatedRun from "@/emulated/EmulatedRun";
 
 export default class MagicBall
 {
@@ -84,11 +87,24 @@ export default class MagicBall
         });
     }
 
+    async removeThread(threadId: string): Promise<ThreadDeleted>
+    {
+        return this.client.beta.threads.del(threadId);
+    }
+
     async addUserMessage(threadId: string, userInput: string): Promise<Message>
     {
         return this.client.beta.threads.messages.create(threadId, {
             content: userInput,
             role: "user",
+        });
+    }
+
+    async addAssistantMessage(threadId: string, assistantInput: string): Promise<Message>
+    {
+        return this.client.beta.threads.messages.create(threadId, {
+            content: assistantInput,
+            role: "assistant",
         });
     }
 
@@ -110,8 +126,27 @@ export default class MagicBall
         });
     }
 
+    async getAssistants(): Promise<Array<Assistant>>
+    {
+        const assistants: Array<Assistant> = [];
+        const list = await this.client.beta.assistants.list();
+        for await (const page of list.iterPages()) {
+            assistants.push(...page.getPaginatedItems())
+        }
+        return assistants;
+    }
+
+    async removeAssistant(assistantId: string): Promise<AssistantDeleted>
+    {
+        return this.client.beta.assistants.del(assistantId);
+    }
+
     async runConversation(threadId: string, assistantId: string)
     {
+        if (process.env.EMULATION) {
+            await this.addAssistantMessage(threadId, `This is emulated message from assistant "${assistantId}".`)
+            return new EmulatedRun("run-id", threadId, assistantId, "Do your best!");
+        }
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
             assistant_id: assistantId,
         });
@@ -122,5 +157,16 @@ export default class MagicBall
     async getMessages(threadId: string)
     {
         return this.client.beta.threads.messages.list(threadId);
+    }
+
+    async getTranscription(file: FileLike)
+    {
+        if (process.env.EMULATION) {
+            return new EmulatedTranscription('This is emulated transcription.');
+        }
+        return this.client.audio.transcriptions.create({
+            file: file,
+            model: "whisper-1",
+        });
     }
 }
