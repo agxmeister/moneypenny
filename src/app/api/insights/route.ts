@@ -4,7 +4,7 @@ import {writeFileSync} from "node:fs";
 
 export async function POST(request: Request)
 {
-    const assistantId = "asst_0zX5bw498q7TLrz9Xdugstr3";
+    const assistantId = "asst_0qG06Oe7TKEQRjeW1fk66ecZ";
 
     const magicBall = new MagicBall(new OpenAI({
         apiKey: process.env.OPENAI_API_KEY

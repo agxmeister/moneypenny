@@ -111,8 +111,38 @@ export default class MagicBall
     async createAssistant(model: string, instructions: string): Promise<Assistant>
     {
         return this.client.beta.assistants.create({
-            model: "gpt-4o-mini",
+            model: model,
             instructions: instructions,
+            response_format: {
+                type: "json_schema",
+                json_schema: {
+                    name: "article-draft-structured",
+                    strict: true,
+                    schema: {
+                        type: "object",
+                        properties: {
+                            title: {
+                                description: "Title of an article",
+                                type: "string",
+                            },
+                            content: {
+                                description: "Content of an article in Markdown format",
+                                type: "string",
+                            },
+                            comment: {
+                                description: "Your comments to this version of an article to continue a dialog with a user",
+                                type: "string",
+                            }
+                        },
+                        required: [
+                            "title",
+                            "content",
+                            "comment",
+                        ],
+                        additionalProperties: false,
+                    },
+                },
+            },
             tools: [
                 {
                     type: "function",
@@ -144,7 +174,11 @@ export default class MagicBall
     async runConversation(threadId: string, assistantId: string)
     {
         if (process.env.EMULATION) {
-            await this.addAssistantMessage(threadId, `This is emulated message from assistant "${assistantId}".`)
+            await this.addAssistantMessage(threadId, JSON.stringify({
+                title: "Test Article",
+                content: "Test article's body.",
+                comment: "Would you like anything else?",
+            }));
             return new EmulatedRun("run-id", threadId, assistantId, "Do your best!");
         }
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
