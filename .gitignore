@@ -2,6 +2,8 @@
 
 /insights/*
 !/insights/.gitkeep
+/recordings/*
+!/recordings/.gitkeep
 
 # dependencies
 /node_modules

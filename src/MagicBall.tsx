@@ -10,6 +10,7 @@ import {Assistant, AssistantDeleted} from "openai/resources/beta/assistants";
 import {FileLike} from "openai/uploads";
 import EmulatedTranscription from "@/emulated/EmulatedTranscription";
 import EmulatedRun from "@/emulated/EmulatedRun";
+import {Transcription} from "openai/resources/audio/transcriptions";
 
 export default class MagicBall
 {
@@ -173,7 +174,7 @@ export default class MagicBall
 
     async runConversation(threadId: string, assistantId: string)
     {
-        if (process.env.EMULATION) {
+        if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             await this.addAssistantMessage(threadId, JSON.stringify({
                 title: "Test Article",
                 content: "Test article's body.",
@@ -193,9 +194,9 @@ export default class MagicBall
         return this.client.beta.threads.messages.list(threadId);
     }
 
-    async getTranscription(file: FileLike)
+    async getTranscription(file: FileLike): Promise<Transcription>
     {
-        if (process.env.EMULATION) {
+        if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             return new EmulatedTranscription('This is emulated transcription.');
         }
         return this.client.audio.transcriptions.create({

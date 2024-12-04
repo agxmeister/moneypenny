@@ -1,6 +1,6 @@
+import {writeFileSync} from "node:fs";
 import OpenAI from "openai";
 import MagicBall from "@/MagicBall";
-import {writeFileSync} from "node:fs";
 
 export async function POST(request: Request)
 {
