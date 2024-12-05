@@ -11,6 +11,7 @@ import {FileLike} from "openai/uploads";
 import EmulatedTranscription from "@/emulated/EmulatedTranscription";
 import EmulatedRun from "@/emulated/EmulatedRun";
 import {Transcription} from "openai/resources/audio/transcriptions";
+import {testInsight} from "@/TestInsight"
 
 export default class MagicBall
 {
@@ -176,8 +177,8 @@ export default class MagicBall
     {
         if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             await this.addAssistantMessage(threadId, JSON.stringify({
-                title: "Test Article",
-                content: "Test article's body.",
+                title: testInsight.title,
+                content: testInsight.content,
                 comment: "Would you like anything else?",
             }));
             return new EmulatedRun("run-id", threadId, assistantId, "Do your best!");
