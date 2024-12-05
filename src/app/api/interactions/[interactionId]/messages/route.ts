@@ -23,12 +23,12 @@ export async function POST(
     {params}: {params: Promise<{interactionId: string}>},
 ) {
     const interactionId = (await params).interactionId;
-    const inout: {userMessage: string} = await request.json();
+    const input: {userMessage: string} = await request.json();
 
     const magicBall = new MagicBall(new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
     }));
-    const message = await magicBall.addUserMessage(interactionId, inout.userMessage);
+    const message = await magicBall.addUserMessage(interactionId, input.userMessage);
 
     return Response.json(message);
 }
