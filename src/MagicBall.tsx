@@ -191,7 +191,12 @@ export default class MagicBall
 
     async getMessages(threadId: string)
     {
-        return this.client.beta.threads.messages.list(threadId);
+        const messages: Array<Message> = [];
+        const list = await this.client.beta.threads.messages.list(threadId);
+        for await (const page of list.iterPages()) {
+            messages.push(...page.getPaginatedItems())
+        }
+        return messages;
     }
 
     async getTranscription(file: FileLike): Promise<Transcription>
