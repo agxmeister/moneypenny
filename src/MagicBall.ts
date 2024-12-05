@@ -178,7 +178,7 @@ export default class MagicBall
         if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             await this.addAssistantMessage(threadId, JSON.stringify({
                 title: testInsight.title,
-                content: testInsight.content,
+                content: testInsight.content + `\r\n\r\n[Edition ${Date.now()}]`,
                 comment: "Would you like anything else?",
             }));
             return new EmulatedRun("run-id", threadId, assistantId, "Do your best!");
