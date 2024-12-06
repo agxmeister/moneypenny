@@ -3,6 +3,7 @@ import MagicBall from "@/MagicBall";
 import OpenAI from "openai";
 import {getInsight} from "@/Helpers";
 import {writeFileSync} from "node:fs";
+import {Input} from "@/Types";
 
 export async function POST(
     request: Request,
@@ -12,7 +13,7 @@ export async function POST(
     const insightId = (await params).insightId;
     const insightData = JSON.parse(readFileSync(`./insights/${insightId}.json`, 'utf-8'));
 
-    const input: {userInput: string} = await request.json();
+    const input: Input = await request.json();
 
     const assistantId = "asst_0qG06Oe7TKEQRjeW1fk66ecZ";
 
@@ -25,7 +26,7 @@ export async function POST(
 
     const messages = await magicBall.getMessages(insightId);
 
-    const insight = getInsight(insightId, messages);
+    const insight = getInsight(insightId, messages, input.settings);
 
     writeFileSync(`./insights/${insightId}.json`, JSON.stringify(insight));
 

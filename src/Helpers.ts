@@ -1,6 +1,7 @@
 import {Message} from "openai/resources/beta/threads/messages";
+import {Settings} from "@/Types";
 
-export function getInsight(threadId: string, messages: Message[])
+export function getInsight(threadId: string, messages: Message[], settings: Settings)
 {
     const lastAssistantMessage = JSON.parse(
         messages
@@ -11,6 +12,7 @@ export function getInsight(threadId: string, messages: Message[])
     );
     return {
         id: threadId,
+        settings: settings,
         title: lastAssistantMessage.title,
         content: lastAssistantMessage.content,
         conversation: messages.map(
