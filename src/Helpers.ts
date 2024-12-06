@@ -1,5 +1,6 @@
 import {Message} from "openai/resources/beta/threads/messages";
 import {Settings} from "@/Types";
+import Insider from "@/Insider";
 
 export function getInsight(threadId: string, messages: Message[], settings: Settings)
 {

@@ -12,6 +12,8 @@ import EmulatedTranscription from "@/emulated/EmulatedTranscription";
 import EmulatedRun from "@/emulated/EmulatedRun";
 import {Transcription} from "openai/resources/audio/transcriptions";
 import {testData} from "@/TestData"
+import {OnPublish, PublishArguments} from "@/Types";
+import Insider from "@/Insider";
 
 export default class MagicBall
 {
@@ -22,7 +24,7 @@ export default class MagicBall
         this.client = client;
     }
 
-    async statusHandler(client: OpenAI, threadId: string, runId: string, runStatus: string, run: Run): Promise<void>
+    async statusHandler(client: OpenAI, threadId: string, runId: string, runStatus: string, run: Run, onPublish: OnPublish): Promise<void>
     {
         if (runStatus === "completed") {
             console.error("Run completed:", runId, runStatus);
@@ -39,6 +41,7 @@ export default class MagicBall
                 threadId,
                 runId,
                 run.required_action.submit_tool_outputs.tool_calls,
+                onPublish,
             );
             return this.statusHandler(
                 client,
@@ -46,6 +49,7 @@ export default class MagicBall
                 newRun.id,
                 newRun.status,
                 newRun,
+                onPublish
             );
         } else {
             console.error("Run not completed", runId, runStatus);
@@ -56,17 +60,19 @@ export default class MagicBall
         client: OpenAI,
         threadId: string,
         runId: string,
-        tools: Array<RequiredActionFunctionToolCall>
+        tools: Array<RequiredActionFunctionToolCall>,
+        onPublish: OnPublish,
     ): Promise<Run>
     {
         return await client.beta.threads.runs.submitToolOutputsAndPoll(threadId, runId, {
             tool_outputs: tools.map<RunSubmitToolOutputsAndPollParams.ToolOutput>(
-                (tool: { function: { name: string; }; id: any; }): RunSubmitToolOutputsAndPollParams.ToolOutput => {
-                    if (tool.function.name === "publishWebsite") {
-                        console.log('Make the publication...')
+                (tool: RequiredActionFunctionToolCall): RunSubmitToolOutputsAndPollParams.ToolOutput => {
+                    if (tool.function.name === "publish") {
+                        const publishArgument = JSON.parse(tool.function.arguments) as PublishArguments;
+                        onPublish(publishArgument.title, publishArgument.content);
                         return {
                             tool_call_id: tool.id,
-                            output: "Website was published!",
+                            output: "The article has been published on the website.",
                         };
                     } else {
                         return {
@@ -114,7 +120,7 @@ export default class MagicBall
     {
         return this.client.beta.assistants.create({
             model: model,
-            instructions: instructions,
+            instructions: "The user would like to create an article for his website. He has some ideas about what to write about, and he will share them with you. Your task is to make the article's draft from the user's sayings. You don't need to add any details on your own if they were not mentioned by the user explicitly. The user probably will ask you for some corrections. At some point, the user will ask you to publish the article in its current state - use the corresponding tool with the latest title and content of the article.",
             response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -124,15 +130,15 @@ export default class MagicBall
                         type: "object",
                         properties: {
                             title: {
-                                description: "Title of an article",
+                                description: "The title of the article",
                                 type: "string",
                             },
                             content: {
-                                description: "Content of an article in Markdown format",
+                                description: "Content of the article in Markdown format, without the title",
                                 type: "string",
                             },
                             comment: {
-                                description: "Your comments to this version of an article to continue a dialog with a user",
+                                description: "Your comments to this version of the article to continue a dialog with the user",
                                 type: "string",
                             }
                         },
@@ -149,9 +155,22 @@ export default class MagicBall
                 {
                     type: "function",
                     function: {
-                        name: "publishWebsite",
-                        description: "Publish website.",
-                        parameters: {},
+                        name: "publish",
+                        description: "Publish the article on the website.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                title: {
+                                    type: "string",
+                                    description: "Title of the article",
+                                },
+                                content: {
+                                    description: "Content of the article in Markdown format",
+                                    type: "string",
+                                },
+                            },
+                            required: ["title", "content"],
+                        },
                     },
                 },
             ],
@@ -173,7 +192,7 @@ export default class MagicBall
         return this.client.beta.assistants.del(assistantId);
     }
 
-    async runConversation(threadId: string, assistantId: string)
+    async runConversation(threadId: string, assistantId: string, onPublish: OnPublish)
     {
         if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             await this.addAssistantMessage(threadId, JSON.stringify({
@@ -186,7 +205,7 @@ export default class MagicBall
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
             assistant_id: assistantId,
         });
-        await this.statusHandler(this.client, threadId, run.id, run.status, run);
+        await this.statusHandler(this.client, threadId, run.id, run.status, run, onPublish);
         return run;
     }
 
