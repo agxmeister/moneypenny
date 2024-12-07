@@ -32,14 +32,16 @@ export function getInsight(threadId: string, messages: Message[], settings: Sett
 
 export const getTools = (settings: Settings): Tools => ({
     publish: async (title: string, content: string) => {
-        console.log(`Publishing the article titled "${title}". Publication URL: "${settings.url}"`);
+        console.log(`Publishing the article titled "${title}". Publication URL: "${settings.publishUrl}"`);
         try {
-            const response = await fetch(settings.url, {
+            const response = await fetch(settings.publishUrl, {
                 method: "POST",
                 body: JSON.stringify({
-                    secret: settings.secret,
                     title: title,
                     content: content,
+                }),
+                headers: new Headers({
+                    "Authorization": `Bearer ${settings.secret}`,
                 })
             })
             console.log(`Publication of the article titled "${title}" completed with the status "${response.status}".`);

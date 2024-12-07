@@ -1,5 +1,5 @@
 export type Settings = {
-    url: string,
+    publishUrl: string,
     secret: string,
 }
 
