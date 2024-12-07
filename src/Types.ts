@@ -8,9 +8,6 @@ export type Input = {
     userInput: string,
 }
 
-export type PublishArguments = {
-    title: string,
-    content: string,
+export type Tools = {
+    publish: (title: string, content: string) => Promise<boolean>,
 }
-
-export type OnPublish = (title: string, content: string) => Promise<boolean>;

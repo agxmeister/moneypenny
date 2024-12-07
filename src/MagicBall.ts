@@ -3,7 +3,7 @@ import {Thread, ThreadDeleted} from "openai/resources/beta/threads/threads";
 import {
     Run,
     RequiredActionFunctionToolCall,
-    RunSubmitToolOutputsAndPollParams
+    RunSubmitToolOutputsParams,
 } from "openai/resources/beta/threads/runs/runs";
 import {Message} from "openai/resources/beta/threads/messages";
 import {Assistant, AssistantDeleted} from "openai/resources/beta/assistants";
@@ -12,8 +12,7 @@ import EmulatedTranscription from "@/emulated/EmulatedTranscription";
 import EmulatedRun from "@/emulated/EmulatedRun";
 import {Transcription} from "openai/resources/audio/transcriptions";
 import {testData} from "@/TestData"
-import {OnPublish, PublishArguments} from "@/Types";
-import Insider from "@/Insider";
+import {Tools} from "@/Types";
 
 export default class MagicBall
 {
@@ -24,65 +23,50 @@ export default class MagicBall
         this.client = client;
     }
 
-    async statusHandler(client: OpenAI, threadId: string, runId: string, runStatus: string, run: Run, onPublish: OnPublish): Promise<void>
+    async statusHandler(threadId: string, run: Run, tools: Tools): Promise<void>
     {
-        if (runStatus === "completed") {
-            console.error("Run completed:", runId, runStatus);
+        if (run.status !== "requires_action") {
             return;
-        } else if (
-            runStatus === "requires_action" &&
-            run.required_action &&
-            run.required_action.submit_tool_outputs &&
-            run.required_action.submit_tool_outputs.tool_calls
-        ) {
-            console.error("Run require actions:", runId, runStatus);
-            const newRun = await this.actionHandler(
-                client,
-                threadId,
-                runId,
-                run.required_action.submit_tool_outputs.tool_calls,
-                onPublish,
-            );
-            return this.statusHandler(
-                client,
-                threadId,
-                newRun.id,
-                newRun.status,
-                newRun,
-                onPublish
-            );
-        } else {
-            console.error("Run not completed", runId, runStatus);
         }
+
+        const actions = run?.required_action?.submit_tool_outputs?.tool_calls;
+        if (!actions) {
+            console.error(`Cannot complete the run "${run.id}" in the status "${run.status}": no actions requested.`);
+            return;
+        }
+
+        return this.statusHandler(
+            threadId,
+            await this.client.beta.threads.runs.submitToolOutputsAndPoll(threadId, run.id, {
+                tool_outputs: await this.actionHandler(actions, tools),
+            }),
+            tools,
+        );
     }
 
     async actionHandler(
-        client: OpenAI,
-        threadId: string,
-        runId: string,
-        tools: Array<RequiredActionFunctionToolCall>,
-        onPublish: OnPublish,
-    ): Promise<Run>
+        actions: RequiredActionFunctionToolCall[],
+        tools: Tools,
+    ): Promise<RunSubmitToolOutputsParams.ToolOutput[]>
     {
-        return await client.beta.threads.runs.submitToolOutputsAndPoll(threadId, runId, {
-            tool_outputs: tools.map<RunSubmitToolOutputsAndPollParams.ToolOutput>(
-                (tool: RequiredActionFunctionToolCall): RunSubmitToolOutputsAndPollParams.ToolOutput => {
-                    if (tool.function.name === "publish") {
-                        const publishArgument = JSON.parse(tool.function.arguments) as PublishArguments;
-                        onPublish(publishArgument.title, publishArgument.content);
-                        return {
-                            tool_call_id: tool.id,
-                            output: "The article has been published on the website.",
-                        };
-                    } else {
-                        return {
-                            tool_call_id: tool.id,
-                            output: "",
-                        };
-                    }
-                },
-            )
-        });
+        const toolOutputs = [];
+        for (const action of actions) {
+            if (action.function.name === "publish") {
+                const {title, content}: {title: string, content: string} = JSON.parse(action.function.arguments);
+                toolOutputs.push({
+                    tool_call_id: action.id,
+                    output: await tools.publish(title, content)
+                        ? "The article has been published on the website."
+                        : "Failed to publish the article on the website",
+                });
+            } else {
+                toolOutputs.push({
+                    tool_call_id: action.id,
+                    output: "This tool is unknown.",
+                })
+            }
+        }
+        return toolOutputs;
     }
 
     async createThread(userInputs: Array<string> = []): Promise<Thread>
@@ -116,7 +100,7 @@ export default class MagicBall
         });
     }
 
-    async createAssistant(model: string, instructions: string): Promise<Assistant>
+    async createAssistant(model: string): Promise<Assistant>
     {
         return this.client.beta.assistants.create({
             model: model,
@@ -156,6 +140,7 @@ export default class MagicBall
                     type: "function",
                     function: {
                         name: "publish",
+                        strict: true,
                         description: "Publish the article on the website.",
                         parameters: {
                             type: "object",
@@ -170,6 +155,7 @@ export default class MagicBall
                                 },
                             },
                             required: ["title", "content"],
+                            additionalProperties: false,
                         },
                     },
                 },
@@ -192,7 +178,7 @@ export default class MagicBall
         return this.client.beta.assistants.del(assistantId);
     }
 
-    async runConversation(threadId: string, assistantId: string, onPublish: OnPublish)
+    async runConversation(threadId: string, assistantId: string, tools: Tools)
     {
         if (process.env.EMULATE_OPENAI_CALLS === 'true') {
             await this.addAssistantMessage(threadId, JSON.stringify({
@@ -205,7 +191,7 @@ export default class MagicBall
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
             assistant_id: assistantId,
         });
-        await this.statusHandler(this.client, threadId, run.id, run.status, run, onPublish);
+        await this.statusHandler(threadId, run, tools);
         return run;
     }
 

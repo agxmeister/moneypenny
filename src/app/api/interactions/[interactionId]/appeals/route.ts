@@ -8,12 +8,14 @@ export async function POST(
     const interactionId = (await params).interactionId;
     const input: {assistantId: string} = await request.json();
 
-    const onPublish = async (title: string, content: string): Promise<boolean> => true;
+    const tools = {
+        publish: async (title: string, content: string): Promise<boolean> => true,
+    };
 
     const magicBall = new MagicBall(new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
     }));
-    const run = await magicBall.runConversation(interactionId, input.assistantId, onPublish);
+    const run = await magicBall.runConversation(interactionId, input.assistantId, tools);
 
     return Response.json(run);
 }

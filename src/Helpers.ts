@@ -1,6 +1,5 @@
 import {Message} from "openai/resources/beta/threads/messages";
-import {Settings} from "@/Types";
-import Insider from "@/Insider";
+import {Settings, Tools} from "@/Types";
 
 export function getInsight(threadId: string, messages: Message[], settings: Settings)
 {
@@ -30,3 +29,24 @@ export function getInsight(threadId: string, messages: Message[], settings: Sett
         ),
     }
 }
+
+export const getTools = (settings: Settings): Tools => ({
+    publish: async (title: string, content: string) => {
+        console.log(`Publishing the article titled "${title}". Publication URL: "${settings.url}"`);
+        try {
+            const response = await fetch(settings.url, {
+                method: "POST",
+                body: JSON.stringify({
+                    secret: settings.secret,
+                    title: title,
+                    content: content,
+                })
+            })
+            console.log(`Publication of the article titled "${title}" completed with the status "${response.status}".`);
+            return response.ok;
+        } catch (error) {
+            console.log(`Failed to publish the article titled "${title}".`);
+            return false;
+        }
+    }
+});

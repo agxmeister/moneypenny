@@ -1,10 +1,9 @@
 import {readFileSync} from 'fs';
 import MagicBall from "@/MagicBall";
 import OpenAI from "openai";
-import {getInsight} from "@/Helpers";
+import {getInsight, getTools} from "@/Helpers";
 import {writeFileSync} from "node:fs";
 import {Input} from "@/Types";
-import Insider from "@/Insider";
 
 export async function POST(
     request: Request,
@@ -22,13 +21,8 @@ export async function POST(
         apiKey: process.env.OPENAI_API_KEY
     }));
 
-    const onPublish = async (title: string, content: string): Promise<boolean> => {
-        const insiderClient = new Insider(input.settings.url, input.settings.secret);
-        return insiderClient.publish(title, content);
-    };
-
     await magicBall.addUserMessage(insightId, input.userInput);
-    await magicBall.runConversation(insightId, assistantId, onPublish);
+    await magicBall.runConversation(insightId, assistantId, getTools(input.settings));
 
     const messages = await magicBall.getMessages(insightId);
 
