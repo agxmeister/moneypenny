@@ -115,11 +115,11 @@ export default class MagicBall
                         type: "object",
                         properties: {
                             title: {
-                                description: "The title of the article. Leave it empty if you don't have enough information at the moment.",
+                                description: "The title of the article. You must leave it empty if nothing changed since your last reply. You may leave it empty until you decide how to title the article.",
                                 type: "string",
                             },
                             content: {
-                                description: "Draft of the article in Markdown format, without a title. This draft should be created by joining together all the texts collected at the moment and ensuring a smooth narration. Leave it empty if you don't have enough information at the moment.",
+                                description: "Draft of the article in Markdown format, without a title. This draft should be created by joining together all the texts collected at the moment and ensuring a smooth narration. You must leave it empty if nothing changed since your last reply. You may leave it empty until the user provides enough information.",
                                 type: "string",
                             },
                             comment: {
