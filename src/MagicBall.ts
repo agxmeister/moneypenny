@@ -13,6 +13,7 @@ import EmulatedRun from "@/emulated/EmulatedRun";
 import {Transcription} from "openai/resources/audio/transcriptions";
 import {testData} from "@/TestData"
 import {Tools} from "@/Types";
+import {assistantData} from "@/AssistantData";
 
 export default class MagicBall
 {
@@ -104,7 +105,7 @@ export default class MagicBall
     {
         return this.client.beta.assistants.create({
             model: model,
-            instructions: "The user would like to create an article for his website. He has some ideas about what to write about, and he will share them with you. Your task is to make the article's draft from the user's sayings. You don't need to add any details on your own if they were not mentioned by the user explicitly. The user probably will ask you for some corrections. At some point, the user will ask you to publish the article in its current state - use the corresponding tool with the latest title and content of the article.",
+            instructions: assistantData.instructions,
             response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -114,15 +115,15 @@ export default class MagicBall
                         type: "object",
                         properties: {
                             title: {
-                                description: "The title of the article",
+                                description: "The title of the article. Leave it empty if you don't have enough information at the moment.",
                                 type: "string",
                             },
                             content: {
-                                description: "Content of the article in Markdown format, without the title",
+                                description: "Draft of the article in Markdown format, without a title. This draft should be created by joining together all the texts collected at the moment and ensuring a smooth narration. Leave it empty if you don't have enough information at the moment.",
                                 type: "string",
                             },
                             comment: {
-                                description: "Your comments to this version of the article to continue a dialog with the user",
+                                description: "Short description of the latest changes in the draft of the article you have made, coupled with your comments to continue a dialog with the user.",
                                 type: "string",
                             }
                         },
@@ -147,10 +148,10 @@ export default class MagicBall
                             properties: {
                                 title: {
                                     type: "string",
-                                    description: "Title of the article",
+                                    description: "Title of the article.",
                                 },
                                 content: {
-                                    description: "Content of the article in Markdown format",
+                                    description: "Content of the article. Markdown markup must be converted to HTML markup.",
                                     type: "string",
                                 },
                             },

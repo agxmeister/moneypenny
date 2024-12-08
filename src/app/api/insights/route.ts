@@ -8,7 +8,7 @@ export async function POST(request: Request)
 {
     const input: Input = await request.json();
 
-    const assistantId = "asst_7U94fY2szmcFRe1IlMxCAfxq";
+    const assistantId = process.env.ASSISTANT_ID ?? "";
 
     const magicBall = new MagicBall(new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
