@@ -115,15 +115,15 @@ export default class MagicBall
                         type: "object",
                         properties: {
                             title: {
-                                description: "The title of the article. You must leave it empty if nothing changed since your last reply. You may leave it empty until you decide how to title the article.",
+                                description: assistantData.response.title,
                                 type: "string",
                             },
                             content: {
-                                description: "Draft of the article in Markdown format, without a title. This draft should be created by joining together all the texts collected at the moment and ensuring a smooth narration. You must leave it empty if nothing changed since your last reply. You may leave it empty until the user provides enough information.",
+                                description: assistantData.response.content,
                                 type: "string",
                             },
                             comment: {
-                                description: "Short description of the latest changes in the draft of the article you have made, coupled with your comments to continue a dialog with the user.",
+                                description: assistantData.response.comment,
                                 type: "string",
                             }
                         },
@@ -151,7 +151,7 @@ export default class MagicBall
                                     description: "Title of the article.",
                                 },
                                 content: {
-                                    description: "Content of the article. Markdown markup must be converted to HTML markup.",
+                                    description: "Content of the article in HTML markup.",
                                     type: "string",
                                 },
                             },
@@ -191,6 +191,7 @@ export default class MagicBall
         }
         const run = await this.client.beta.threads.runs.createAndPoll(threadId, {
             assistant_id: assistantId,
+            temperature: 0.7,
         });
         await this.statusHandler(threadId, run, tools);
         return run;
